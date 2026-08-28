@@ -10,6 +10,7 @@ void main() {
   ));
 }
 
+
 class DirectPrinterScreen extends StatefulWidget {
   const DirectPrinterScreen({super.key});
 

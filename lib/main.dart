@@ -1,16 +1,15 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:network_info_plus/network_info_plus.dart';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/material.dart';
+import 'services/lpd_printer_service.dart';
+import 'services/wifi_service.dart';
 
 void main() {
-  runApp(const WifiPrinterApp());
+  runApp(const BracuPrintApp());
 }
 
-class WifiPrinterApp extends StatelessWidget {
-  const WifiPrinterApp({super.key});
+class BracuPrintApp extends StatelessWidget {
+  const BracuPrintApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,182 +19,222 @@ class WifiPrinterApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
         useMaterial3: true,
       ),
-      home: const PrinterScreen(),
+      home: const CampusPrinterHomePage(),
     );
   }
 }
 
-class PrinterScreen extends StatefulWidget {
-  const PrinterScreen({super.key});
+class CampusPrinterHomePage extends StatefulWidget {
+  const CampusPrinterHomePage({super.key});
 
   @override
-  State<PrinterScreen> createState() => _PrinterScreenState();
+  State<CampusPrinterHomePage> createState() => _CampusPrinterHomePageState();
 }
 
-class _PrinterScreenState extends State<PrinterScreen> {
-  final NetworkInfo _networkInfo = NetworkInfo();
-  String _wifiName = 'Unknown';
-  String _wifiIP = 'Unknown';
-  File? _selectedFile;
-  bool _isUploading = false;
-  String _statusMessage = '';
+class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
+  // Authentication State
+  final _studentIdController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isWifiConnected = false;
+  bool _isConnectingWifi = false;
 
-  // Configuration for campus network & printer endpoint
-  static const String _requiredSSID = 'BRACU-STUDENT'; // Adjust to exact SSID
-  static const String _printServerUrl = 'http://10.0.0.50:8080/api/print'; // Adjust printer IP/Port
+  // Print Queue State
+  final _printerIpController = TextEditingController(text: '10.10.0.50');
+  PlatformFile? _selectedFile;
+  bool _isSendingPrint = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkPermissionsAndNetwork();
-  }
-
-  Future<void> _checkPermissionsAndNetwork() async {
-    await [Permission.location].request();
-    
-    String? ssid = await _networkInfo.getWifiName();
-    String? ip = await _networkInfo.getWifiIP();
-
-    setState(() {
-      _wifiName = ssid?.replaceAll('"', '') ?? 'Not Connected';
-      _wifiIP = ip ?? '0.0.0.0';
-    });
-  }
-
-  Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-
-      setState(() {
-        _selectedFile = File(result.files.single.path!);
-        _statusMessage = 'File loaded: ${result.files.single.name}';
-      });
-    }
-  }
-
-  Future<void> _sendPrintJob() async {
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a file first.')),
-      );
+  Future<void> _handleWifiLogin() async {
+    if (_studentIdController.text.isEmpty || _passwordController.text.isEmpty) {
+      _showMessage('Please enter Student ID and Password');
       return;
     }
 
-    setState(() {
-      _isUploading = true;
-      _statusMessage = 'Submitting job to printer queue...';
-    });
+    setState(() => _isConnectingWifi = true);
 
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(_printServerUrl));
-      request.files.add(
-        await http.MultipartFile.fromPath('file', _selectedFile!.path),
+      final success = await WifiService.login(
+        username: _studentIdController.text.trim(),
+        password: _passwordController.text.trim(),
       );
-      request.fields['student_id'] = 'YOUR_STUDENT_ID';
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          _statusMessage = 'Print request successfully queued!';
-        });
+      if (success) {
+        setState(() => _isWifiConnected = true);
+        _showMessage('Successfully connected to Campus Wi-Fi!');
       } else {
-        setState(() {
-          _statusMessage = 'Failed to queue print job. Server error: ${response.statusCode}';
-        });
+        _showMessage('Login failed. Verify credentials or Wi-Fi coverage.');
       }
     } catch (e) {
-      setState(() {
-        _statusMessage = 'Error connecting to printer server: $e';
-      });
+      _showMessage(e.toString());
     } finally {
-      setState(() {
-        _isUploading = false;
-      });
+      setState(() => _isConnectingWifi = false);
     }
+  }
+
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'txt', 'ps'],
+      withData: true,
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _selectedFile = result.files.first);
+    }
+  }
+
+  Future<void> _handlePrintSubmission() async {
+    if (_selectedFile == null || _selectedFile!.bytes == null) {
+      _showMessage('Please select a valid PDF/Document to print');
+      return;
+    }
+
+    setState(() => _isSendingPrint = true);
+
+    try {
+      final lpdClient = LpdPrinterService(
+        printerIp: _printerIpController.text.trim(),
+      );
+
+      await lpdClient.sendPrintJob(
+        fileBytes: _selectedFile!.bytes!,
+        fileName: _selectedFile!.name,
+        username: _studentIdController.text.trim().isNotEmpty
+            ? _studentIdController.text.trim()
+            : 'student',
+      );
+
+      _showMessage('Print job queued successfully on campus printer!');
+    } catch (e) {
+      _showMessage('Print submission failed: $e');
+    } finally {
+      setState(() => _isSendingPrint = false);
+    }
+  }
+
+  void _showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isConnectedToCampusWifi = _wifiName == _requiredSSID || _wifiName != 'Not Connected';
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BRACU Campus Printer'),
+        title: const Text('BRACU Wi-Fi Printer Client'),
+        elevation: 2,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // STEP 1: Wi-Fi Login Card
             Card(
-              elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Network Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text('SSID: $_wifiName'),
-                    Text('IP Address: $_wifiIP'),
-                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(
-                          isConnectedToCampusWifi ? Icons.check_circle : Icons.warning,
-                          color: isConnectedToCampusWifi ? Colors.green : Colors.amber,
+                          _isWifiConnected
+                              ? Icons.wifi_sharp
+                              : Icons.wifi_lock_rounded,
+                          color: _isWifiConnected ? Colors.green : Colors.orange,
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            isConnectedToCampusWifi
-                                ? 'Connected to campus network.'
-                                : 'Connect to campus Wi-Fi to send print requests.',
-                            style: TextStyle(
-                              color: isConnectedToCampusWifi ? Colors.green : Colors.amber[900],
-                            ),
-                          ),
+                        const Text(
+                          'Step 1: Campus Wi-Fi Authentication',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ],
+                    ),
+                    const Divider(),
+                    TextField(
+                      controller: _studentIdController,
+                      decoration:
+                          const InputDecoration(labelText: 'Student ID / User'),
+                    ),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(labelText: 'Password'),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _isConnectingWifi ? null : _handleWifiLogin,
+                      icon: _isConnectingWifi
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login),
+                      label: Text(_isWifiConnected ? 'Re-authenticate' : 'Connect Wi-Fi'),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _pickFile,
-              icon: const Icon(Icons.attach_file),
-              label: const Text('Select Document (PDF/DOCX)'),
-            ),
-            if (_selectedFile != null) ...[
-              const SizedBox(height: 12),
-              Text('Selected: ${_selectedFile!.path.split('/').last}'),
-            ],
-            const Spacer(),
-            if (_statusMessage.isNotEmpty)
-              Text(
-                _statusMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+            const SizedBox(height: 16),
+
+            // STEP 2: Print Queue Submission Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.print_rounded, color: Color(0xFF003366)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Step 2: Submit Document to Printer',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    TextField(
+                      controller: _printerIpController,
+                      decoration: const InputDecoration(
+                        labelText: 'Print Queue IP (LPD Server)',
+                        hintText: '10.10.0.50',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _pickDocument,
+                      icon: const Icon(Icons.attach_file),
+                      label: Text(_selectedFile != null
+                          ? 'Selected: ${_selectedFile!.name}'
+                          : 'Select PDF Document'),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: (_isSendingPrint)
+                          ? null
+                          : _handlePrintSubmission,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF003366),
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: _isSendingPrint
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                      label: const Text('Send to Campus Printer Queue'),
+                    ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: (_isUploading || !isConnectedToCampusWifi) ? null : _sendPrintJob,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: _isUploading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Submit to Print Queue', style: TextStyle(fontSize: 16)),
             ),
           ],
         ),

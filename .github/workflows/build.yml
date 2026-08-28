@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -21,17 +21,18 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Accept Android SDK Licenses
+      - name: Create Flutter App
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Create Flutter Project & Generate Code
-        run: |
+          rm -rf app
           flutter create --org com.private.printer --project-name private_printer app
-          cd app
-          flutter pub add file_picker
 
-          cat << 'EOF' > lib/main.dart
+      - name: Add Dependencies
+        working-directory: ./app
+        run: flutter pub add file_picker
+
+      - name: Write Application Code
+        run: |
+          cat << 'EOF' > app/lib/main.dart
           import 'dart:io';
           import 'dart:typed_data';
           import 'package:flutter/material.dart';
@@ -143,10 +144,9 @@ jobs:
           }
           EOF
 
-      - name: Build Android Release APK
-        run: |
-          cd app
-          flutter build apk --release --no-tree-shake-icons
+      - name: Build Release APK
+        working-directory: ./app
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4

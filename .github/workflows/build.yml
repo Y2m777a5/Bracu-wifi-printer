@@ -21,20 +21,25 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Build Flutter App
+      - name: Create Flutter Project
         run: |
-          # 1. Create clean Flutter project
           flutter create --org com.private.printer --project-name printer_app printer_app
-          cd printer_app
 
-          # 2. Add file picker dependency
+      - name: Configure Project & Code
+        working-directory: ./printer_app
+        run: |
           flutter pub add file_picker
 
-          # 3. Increase minSdkVersion to 21 for file_picker compatibility
-          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle || true
-          sed -i 's/minSdkVersion = .*/minSdkVersion = 21/' android/app/build.gradle.kts || true
+          # Override minSdkVersion to 21 for file_picker compatibility
+          echo "flutter.minSdkVersion=21" >> android/local.properties
+          if [ -f "android/app/build.gradle.kts" ]; then
+            sed -i 's/minSdk = .*/minSdk = 21/' android/app/build.gradle.kts
+          fi
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
+          fi
 
-          # 4. Write application code directly to lib/main.dart
+          # Write app source code
           cat << 'EOF' > lib/main.dart
           import 'dart:io';
           import 'dart:typed_data';
@@ -147,8 +152,11 @@ jobs:
           }
           EOF
 
-          # 5. Build release APK
-          flutter build apk --release --no-tree-shake-icons
+      - name: Build Release APK
+        working-directory: ./printer_app
+        env:
+          _JAVA_OPTIONS: "-Xmx3g"
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4

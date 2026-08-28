@@ -8,8 +8,8 @@ class LpdPrinterService {
   final int port;
 
   LpdPrinterService({
-    this.printerIp = '10.10.0.50', // BRACU Campus Print Queue IP
-    this.port = 515,               // Standard LPD TCP Port
+    this.printerIp = '10.10.0.50',
+    this.port = 515,
   });
 
   /// Transmits document bytes over low-level LPD protocol (RFC 1179)
@@ -30,32 +30,29 @@ class LpdPrinterService {
       socket.add(utf8.encode('\x02$queueName\n'));
       await _readAck(socket);
 
-      // Generate job identifier metadata
       final String hostName = 'BRACU-Mobile';
       final String jobNum =
           '${DateTime.now().millisecondsSinceEpoch % 1000}'.padLeft(3, '0');
 
-      // LPD Control File format (H=host, P=user, N=filename, f=datafile)
+      // LPD Control File format
       final String controlFile =
           'H$hostName\nP$username\nfdfA$jobNum$hostName\nN$fileName\n';
       final Uint8List cfBytes = Uint8List.fromList(utf8.encode(controlFile));
 
-      // 2. Command: Receive Control File (\x02 + size + space + cfA... + \n)
+      // 2. Command: Receive Control File
       socket.add(
           utf8.encode('\x02${cfBytes.length} cfA$jobNum$hostName\n'));
       await _readAck(socket);
 
-      // Send Control File content followed by zero byte
       socket.add(cfBytes);
       socket.add([0x00]);
       await _readAck(socket);
 
-      // 3. Command: Receive Data File (\x03 + size + space + dfA... + \n)
+      // 3. Command: Receive Data File
       socket.add(
           utf8.encode('\x03${fileBytes.length} dfA$jobNum$hostName\n'));
       await _readAck(socket);
 
-      // Send Data File payload followed by zero byte
       socket.add(fileBytes);
       socket.add([0x00]);
       await _readAck(socket);

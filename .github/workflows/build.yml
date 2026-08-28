@@ -24,12 +24,12 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean Stale Files and Regenerate Android
+      - name: Clean stale Android directory and recreate
         run: |
           rm -rf android
           flutter create --platforms=android --org com.example .
 
-      - name: Force compileSdk 36
+      - name: Force compileSdk 36 for file_picker & plugins
         run: |
           echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdk = 36 } } } }" >> android/build.gradle
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle || true
@@ -38,11 +38,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk

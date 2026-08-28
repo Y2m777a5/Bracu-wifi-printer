@@ -1,0 +1,109 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+
+void main() {
+  runApp(const MaterialApp(
+    home: DirectPrinterScreen(),
+    debugShowCheckedModeBanner: false,
+  ));
+}
+
+class DirectPrinterScreen extends StatefulWidget {
+  const DirectPrinterScreen({super.key});
+
+  @override
+  State<DirectPrinterScreen> createState() => _DirectPrinterScreenState();
+}
+
+class _DirectPrinterScreenState extends State<DirectPrinterScreen> {
+  final TextEditingController _ipController = TextEditingController(text: '10.0.0.50');
+  final TextEditingController _portController = TextEditingController(text: '9100');
+  File? _selectedFile;
+  bool _isPrinting = false;
+  String _statusMessage = 'Select a document to print.';
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedFile = File(result.files.single.path!);
+        _statusMessage = 'Selected: ${result.files.single.name}';
+      });
+    }
+  }
+
+  Future<void> _sendPrintJob() async {
+    if (_selectedFile == null) {
+      setState(() => _statusMessage = 'Please select a file first.');
+      return;
+    }
+
+    final String ip = _ipController.text.trim();
+    final int? port = int.tryParse(_portController.text.trim());
+
+    if (ip.isEmpty || port == null) {
+      setState(() => _statusMessage = 'Invalid IP address or port.');
+      return;
+    }
+
+    setState(() {
+      _isPrinting = true;
+      _statusMessage = 'Connecting to $ip:$port...';
+    });
+
+    try {
+      Uint8List bytes = await _selectedFile!.readAsBytes();
+      Socket socket = await Socket.connect(ip, port, timeout: const Duration(seconds: 10));
+      socket.add(bytes);
+      await socket.flush();
+      await socket.close();
+      setState(() => _statusMessage = 'Success! Print job sent.');
+    } catch (e) {
+      setState(() => _statusMessage = 'Failed to print: $e');
+    } finally {
+      setState(() => _isPrinting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Local Wi-Fi Printer')),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAlignment: CrossAlignment.stretch,
+          children: [
+            TextField(
+              controller: _ipController,
+              decoration: const InputDecoration(labelText: 'Printer IP Address', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _portController,
+              decoration: const InputDecoration(labelText: 'Port (9100 RAW / 515 LPR)', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(Icons.attach_file),
+              label: const Text('Pick PDF or Image File'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _isPrinting ? null : _sendPrintJob,
+              icon: _isPrinting ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.print),
+              label: Text(_isPrinting ? 'Sending...' : 'Send to Printer'),
+            ),
+            const SizedBox(height: 24),
+            Text(_statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}

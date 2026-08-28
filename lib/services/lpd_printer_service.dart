@@ -63,9 +63,9 @@ class LpdPrinterService {
 
   Future<void> _readAck(Socket socket) async {
     await socket.flush();
-    final List<int> response = await socket.first.timeout(
+    final Uint8List response = await socket.first.timeout(
       const Duration(seconds: 5),
-      onTimeout: () => [0x01],
+      onTimeout: () => Uint8List.fromList([0x01]),
     );
 
     if (response.isEmpty || response[0] != 0x00) {

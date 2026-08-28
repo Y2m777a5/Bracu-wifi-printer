@@ -30,7 +30,7 @@ class LpdPrinterService {
       socket.add(utf8.encode('\x02$queueName\n'));
       await _readAck(socket);
 
-      final String hostName = 'BRACU-Mobile';
+      const String hostName = 'BRACU-Mobile';
       final String jobNum =
           '${DateTime.now().millisecondsSinceEpoch % 1000}'.padLeft(3, '0');
 

@@ -345,74 +345,74 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
             ),
             const SizedBox(height: 16),
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
+              clipBehavior: Clip.antiAlias,
+              child: ExpansionTile(
+                initiallyExpanded: _isWifiConnected, // Auto-expand if already connected
+                leading: const Icon(Icons.print_rounded, color: Color(0xFF003366)),
+                title: const Text(
+                  'Step 2: Submit Document to Printer',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(Icons.print_rounded, color: Color(0xFF003366)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Step 2: Submit Document to Printer',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _printerIpController,
+                          decoration: const InputDecoration(
+                            labelText: 'Print Queue IP (LPD Server)',
+                            hintText: '10.10.0.50',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          title: const Text('Double-Sided Printing'),
+                          subtitle: const Text('Prints on both sides of the paper'),
+                          value: _isDuplex,
+                          onChanged: (val) {
+                            setState(() => _isDuplex = val);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _pickDocument,
+                          icon: const Icon(Icons.attach_file),
+                          label: Text(_selectedFile != null
+                              ? 'Selected: ${_selectedFile!.name}'
+                              : 'Select PDF Document'),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _loadBlankPage,
+                          icon: const Icon(Icons.note_add_outlined, size: 18),
+                          label: const Text('Generate Blank Page for Testing',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: (_isSendingPrint) ? null : _handlePrintSubmission,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF003366),
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: _isSendingPrint
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.send),
+                          label: const Text('Send to Campus Printer Queue'),
                         ),
                       ],
                     ),
-                    const Divider(),
-                    TextField(
-                      controller: _printerIpController,
-                      decoration: const InputDecoration(
-                        labelText: 'Print Queue IP (LPD Server)',
-                        hintText: '10.10.0.50',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      title: const Text('Double-Sided Printing'),
-                      subtitle: const Text('Prints on both sides of the paper'),
-                      value: _isDuplex,
-                      onChanged: (val) {
-                        setState(() => _isDuplex = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _pickDocument,
-                      icon: const Icon(Icons.attach_file),
-                      label: Text(_selectedFile != null
-                          ? 'Selected: ${_selectedFile!.name}'
-                          : 'Select PDF Document'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: _loadBlankPage,
-                      icon: const Icon(Icons.note_add_outlined, size: 18),
-                      label: const Text('Generate Blank Page for Testing', style: TextStyle(fontSize: 12)),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: (_isSendingPrint)
-                          ? null
-                          : _handlePrintSubmission,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF003366),
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: _isSendingPrint
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send),
-                      label: const Text('Send to Campus Printer Queue'),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

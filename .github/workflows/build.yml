@@ -1,0 +1,30 @@
+name: Compile APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Generate App & Compile APK
+        run: |
+          flutter create --org com.private.printer --app-name private_printer app
+          cd app
+          flutter pub add file_picker
+          cp ../main.dart lib/main.dart
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wi-Fi-Printer-APK
+          path: app/build/app/outputs/flutter-apk/app-release.apk

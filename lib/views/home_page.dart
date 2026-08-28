@@ -12,13 +12,11 @@ class CampusPrinterHomePage extends StatefulWidget {
 }
 
 class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
-  // Authentication State
   final _studentIdController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isWifiConnected = false;
   bool _isConnectingWifi = false;
 
-  // Print Queue State
   final _printerIpController = TextEditingController(text: '10.10.0.50');
   PlatformFile? _selectedFile;
   bool _isSendingPrint = false;
@@ -107,7 +105,6 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // STEP 1: Wi-Fi Login Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -158,8 +155,6 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // STEP 2: Print Queue Submission Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),

@@ -75,7 +75,7 @@ class _DirectPrinterScreenState extends State<DirectPrinterScreen> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAlignment: CrossAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _ipController,

@@ -25,6 +25,16 @@ class HistoryService {
     await prefs.setStringList(_keyHistory, historyJson);
   }
 
+  static Future<PrintJob?> getLastSuccessfulJob() async {
+    final history = await getHistory();
+    try {
+      // getHistory() returns reversed list (newest first)
+      return history.firstWhere((job) => job.status.toLowerCase() == 'success');
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyHistory);

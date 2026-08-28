@@ -15,6 +15,12 @@ class _PrinterStatusPageState extends State<PrinterStatusPage> {
   String _statusMessage = 'Unknown';
   bool? _isOnline;
 
+  @override
+  void dispose() {
+    _ipController.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkPrinterStatus() async {
     setState(() {
       _isChecking = true;

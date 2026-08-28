@@ -4,10 +4,21 @@ class SettingsService {
   static const String _keyPortalUrl = 'portal_url';
   static const String _keyPrinterIp = 'printer_ip';
   static const String _keyLpdPort = 'lpd_port';
+  static const String _keyThemeMode = 'theme_mode';
 
   static const String defaultPortalUrl = 'http://10.10.0.1/eportal/InterFace.do?method=login';
   static const String defaultPrinterIp = '10.10.0.50';
   static const int defaultLpdPort = 515;
+
+  static Future<String> getThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyThemeMode) ?? 'system';
+  }
+
+  static Future<void> setThemeMode(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyThemeMode, value);
+  }
 
   static Future<String> getPortalUrl() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,22 +1,5 @@
-name: bracu_wifi_printer
-description: "A Flutter application to queue print jobs over campus Wi-Fi."
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-
 dependencies:
   flutter:
     sdk: flutter
-  network_info_plus: ^5.0.3
-  file_picker: ^8.0.0
   http: ^1.2.0
-  permission_handler: ^11.3.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-flutter:
-  uses-material-design: true
+  file_picker: ^8.0.0

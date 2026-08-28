@@ -23,7 +23,7 @@ jobs:
 
       - name: Create Flutter Project
         run: |
-          flutter create --org com.private.printer --project-name printer_app printer_app
+          flutter create --org com.bracu.printer -t app printer_app
 
       - name: Configure Project & Code
         working-directory: ./printer_app

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Java JDK
         uses: actions/setup-java@v3
@@ -23,6 +23,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+
+      - name: Regenerate Android v2 Embedding Files
+        run: flutter create --platforms=android .
 
       - name: Install dependencies
         run: flutter pub get

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'views/home_page.dart'; // If using multi-tab navigation, import 'views/navigation_screen.dart' instead
+import 'views/navigation_screen.dart';
 
 void main() {
   runApp(const BracuPrintApp());
@@ -17,8 +17,7 @@ class BracuPrintApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
         useMaterial3: true,
       ),
-      home: const CampusPrinterHomePage(),
-      // If you built navigation_screen.dart from earlier, replace CampusPrinterHomePage() with NavigationScreen()
+      home: const NavigationScreen(),
     );
   }
 }

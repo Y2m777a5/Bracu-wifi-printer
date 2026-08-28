@@ -5,22 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="48ca7855-0cc6-4634-8cf1-6d39bb733fa8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lib/models/print_job.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/services/connectivity_service.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/services/history_service.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/services/secure_storage_service.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/services/settings_service.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/services/auth_bridge.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/services/permission_service.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/services/printer_utils.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/services/snmp_service.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/printer_logic_test.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/security_test.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/android/local.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bracu_wifi_printer.iml" beforeDir="false" afterPath="$PROJECT_DIR$/bracu_wifi_printer.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/services/connectivity_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/connectivity_service.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/services/lpd_printer_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/lpd_printer_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/services/wifi_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/wifi_service.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/services/settings_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/settings_service.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/views/home_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/views/home_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/views/print_history_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/views/print_history_page.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/views/printer_status_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/views/printer_status_page.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/views/settings_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/views/settings_page.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />

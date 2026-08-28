@@ -6,6 +6,9 @@ import '../services/settings_service.dart';
 import '../services/history_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/permission_service.dart';
+import '../services/auth_bridge.dart';
+import '../services/printer_utils.dart';
 import '../models/print_job.dart';
 
 class CampusPrinterHomePage extends StatefulWidget {
@@ -35,7 +38,30 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
     _loadSettings();
     _loadCredentials();
     _loadLastJob();
+    _requestInitialPermissions();
     ConnectivityService().startMonitoring(_showMessage);
+
+    // Register cleanup logic with the Auth Bridge
+    AuthUiBridge.configure(
+      clearHomeUi: () async {
+        setState(() {
+          _studentIdController.clear();
+          _passwordController.clear();
+          _printerIpController.text = SettingsService.defaultPrinterIp;
+          _selectedFile = null;
+          _isWifiConnected = false;
+          _rememberMe = false;
+          _lastJob = null;
+        });
+      },
+    );
+  }
+
+  Future<void> _requestInitialPermissions() async {
+    final autoLogin = await SecureStorageService.isAutoLoginEnabled();
+    if (autoLogin) {
+      await PermissionService.requestWifiPermissions();
+    }
   }
 
   @override
@@ -117,13 +143,25 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
   Future<void> _pickDocument() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'txt', 'ps'],
+      allowedExtensions: ['pdf', 'txt', 'ps', 'jpg', 'jpeg'],
       withData: true,
     );
 
     if (result != null && result.files.isNotEmpty) {
       setState(() => _selectedFile = result.files.first);
     }
+  }
+
+  Future<void> _loadBlankPage() async {
+    final bytes = PrinterUtils.createLocalBlankPdf();
+    setState(() {
+      _selectedFile = PlatformFile(
+        name: 'Blank Page.pdf',
+        size: bytes.length,
+        bytes: bytes,
+      );
+    });
+    _showMessage('Blank page generated.');
   }
 
   Future<void> _handlePrintSubmission() async {
@@ -139,6 +177,7 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
 
     try {
       final lpdPort = await SettingsService.getLpdPort();
+      final lpdQueue = await SettingsService.getLpdQueue();
       final lpdClient = LpdPrinterService(
         printerIp: printerIp,
         port: lpdPort,
@@ -150,6 +189,7 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
         username: _studentIdController.text.trim().isNotEmpty
             ? _studentIdController.text.trim()
             : 'student',
+        queueName: lpdQueue,
         isDuplex: _isDuplex,
       );
 
@@ -276,7 +316,14 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
                       title: const Text('Auto-Login on Campus Wi-Fi'),
                       subtitle: const Text('Secures credentials in system keychain'),
                       value: _rememberMe,
-                      onChanged: (val) {
+                      onChanged: (val) async {
+                        if (val) {
+                          final granted = await PermissionService.requestWifiPermissions();
+                          if (!granted) {
+                            _showMessage('Permission required for Auto-Login to work');
+                            return;
+                          }
+                        }
                         setState(() => _rememberMe = val);
                       },
                     ),
@@ -338,6 +385,12 @@ class _CampusPrinterHomePageState extends State<CampusPrinterHomePage> {
                       label: Text(_selectedFile != null
                           ? 'Selected: ${_selectedFile!.name}'
                           : 'Select PDF Document'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _loadBlankPage,
+                      icon: const Icon(Icons.note_add_outlined, size: 18),
+                      label: const Text('Generate Blank Page for Testing', style: TextStyle(fontSize: 12)),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(

@@ -68,5 +68,15 @@ void main() {
       expect(pdfText, contains('/Width 100'));
       expect(pdfText, contains('/Height 200'));
     });
+
+    test('createLocalBlankPdf generates valid minimal A4 PDF', () {
+      final pdfBytes = PrinterUtils.createLocalBlankPdf();
+      final pdfText = utf8.decode(pdfBytes);
+
+      expect(pdfText, contains('%PDF-1.4'));
+      expect(pdfText, contains('/MediaBox [0 0 595 842]'));
+      expect(pdfText, contains('590 835 1 1 re f'));
+      expect(pdfText, contains('%%EOF'));
+    });
   });
 }

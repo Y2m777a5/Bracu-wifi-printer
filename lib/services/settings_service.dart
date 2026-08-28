@@ -4,10 +4,13 @@ class SettingsService {
   static const String _keyPortalUrl = 'portal_url';
   static const String _keyPrinterIp = 'printer_ip';
   static const String _keyLpdPort = 'lpd_port';
+  static const String _keyLpdQueue = 'lpd_queue';
   static const String _keyThemeMode = 'theme_mode';
 
   static const String defaultPortalUrl = 'http://10.10.0.1/eportal/InterFace.do?method=login';
   static const String defaultPrinterIp = '10.10.0.50';
+  static const String fallbackPrinterIp = '172.16.0.111';
+  static const String defaultLpdQueue = 'secure';
   static const int defaultLpdPort = 515;
 
   static Future<String> getThemeMode() async {
@@ -48,5 +51,24 @@ class SettingsService {
   static Future<void> setLpdPort(int value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyLpdPort, value);
+  }
+
+  static Future<String> getLpdQueue() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLpdQueue) ?? defaultLpdQueue;
+  }
+
+  static Future<void> setLpdQueue(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLpdQueue, value);
+  }
+
+  static Future<void> resetToDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyPortalUrl);
+    await prefs.remove(_keyPrinterIp);
+    await prefs.remove(_keyLpdPort);
+    await prefs.remove(_keyLpdQueue);
+    await prefs.remove(_keyThemeMode);
   }
 }

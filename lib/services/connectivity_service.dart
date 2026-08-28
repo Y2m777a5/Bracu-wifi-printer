@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'wifi_service.dart';
 import 'secure_storage_service.dart';
+import 'permission_service.dart';
 
 class ConnectivityService {
   final _connectivity = Connectivity();
@@ -15,7 +16,6 @@ class ConnectivityService {
 
   void startMonitoring(Function(String) onStatusChange) {
     _subscription = _connectivity.onConnectivityChanged.listen((results) async {
-      // In connectivity_plus 6.0+, it returns a List<ConnectivityResult>
       if (results.contains(ConnectivityResult.wifi)) {
         await _handleWifiConnected(onStatusChange);
       }
@@ -29,6 +29,12 @@ class ConnectivityService {
   Future<void> _handleWifiConnected(Function(String) onStatusChange) async {
     final isAutoLogin = await SecureStorageService.isAutoLoginEnabled();
     if (!isAutoLogin) return;
+
+    final hasPermission = await PermissionService.hasWifiPermissions();
+    if (!hasPermission) {
+      onStatusChange('Auto-login failed: WiFi permissions missing.');
+      return;
+    }
 
     try {
       final wifiName = await _networkInfo.getWifiName();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'printer_utils.dart';
 
 class LpdPrinterService {
   final String printerIp;
@@ -17,7 +18,7 @@ class LpdPrinterService {
     required Uint8List fileBytes,
     required String fileName,
     required String username,
-    String queueName = 'raw',
+    String queueName = 'secure',
     bool isDuplex = true,
   }) async {
     final Socket socket = await Socket.connect(
@@ -29,46 +30,48 @@ class LpdPrinterService {
     final responseStream = StreamIterator(socket);
 
     try {
-      // Prepare bytes with hardware commands if duplexing is requested
-      Uint8List finalBytes = fileBytes;
-      if (isDuplex) {
-        const String pjlHeader = '\x1b%-12345X@PJL\r\n'
-            '@PJL SET DUPLEX=ON\r\n'
-            '@PJL SET BINDING=LONGEDGE\r\n';
-        const String pjlFooter = '\x1b%-12345X';
+      // 1. Process document data
+      Uint8List processedBytes = fileBytes;
+      if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+        processedBytes = PrinterUtils.wrapJpegInPdf(fileBytes);
+      }
 
+      // 2. Apply PJL hardware commands if requested
+      Uint8List finalBytes = processedBytes;
+      if (isDuplex) {
+        final prefix = PrinterUtils.generatePjlPrefix(isDuplex: true);
         final builder = BytesBuilder();
-        builder.add(utf8.encode(pjlHeader));
-        builder.add(fileBytes);
-        builder.add(utf8.encode(pjlFooter));
+        builder.add(utf8.encode(prefix));
+        builder.add(processedBytes);
+        builder.add(utf8.encode(PrinterUtils.pjlFooter));
         finalBytes = builder.toBytes();
       }
 
-      // 1. Send Receive Printer Job command: \x02 + queueName + \n
+      // 3. Initiate LPD Protocol: Send Receive Printer Job command
       socket.add(utf8.encode('\x02$queueName\n'));
       await _readAck(responseStream);
 
       const String hostName = 'BRACU-Mobile';
-      final String jobNum =
-          '${DateTime.now().millisecondsSinceEpoch % 1000}'.padLeft(3, '0');
+      final String jobNum = '${DateTime.now().millisecondsSinceEpoch % 1000}'.padLeft(3, '0');
 
-      // LPD Control File format
-      final String controlFile =
-          'H$hostName\nP$username\nfdfA$jobNum$hostName\nN$fileName\n';
+      // 4. Send LPD Control File
+      final String controlFile = PrinterUtils.generateControlFile(
+        hostName: hostName,
+        username: username,
+        jobNum: jobNum,
+        fileName: fileName,
+      );
       final Uint8List cfBytes = Uint8List.fromList(utf8.encode(controlFile));
 
-      // 2. Command: Receive Control File
-      socket.add(
-          utf8.encode('\x02${cfBytes.length} cfA$jobNum$hostName\n'));
+      socket.add(utf8.encode('\x02${cfBytes.length} cfA$jobNum$hostName\n'));
       await _readAck(responseStream);
 
       socket.add(cfBytes);
       socket.add([0x00]);
       await _readAck(responseStream);
 
-      // 3. Command: Receive Data File
-      socket.add(
-          utf8.encode('\x03${finalBytes.length} dfA$jobNum$hostName\n'));
+      // 5. Send LPD Data File
+      socket.add(utf8.encode('\x03${finalBytes.length} dfA$jobNum$hostName\n'));
       await _readAck(responseStream);
 
       socket.add(finalBytes);
